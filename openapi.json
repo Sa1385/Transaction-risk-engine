@@ -1,0 +1,316 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Transaction Risk & Fraud Detection Engine",
+    "description": "A backend service that accepts financial transactions, computes fraud risk scores (0-100), logs reasons and evidence, and stores everything in a database.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/transactions": {
+      "post": {
+        "summary": "Process a new transaction",
+        "description": "Submit a financial transaction for fraud risk evaluation",
+        "operationId": "process_transaction",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransactionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transaction processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/risk/{transaction_id}": {
+      "get": {
+        "summary": "Get risk evaluation for a transaction",
+        "operationId": "get_risk",
+        "parameters": [
+          {
+            "name": "transaction_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Risk evaluation found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Transaction not found"
+          }
+        }
+      }
+    },
+    "/flags": {
+      "get": {
+        "summary": "List flagged transactions",
+        "operationId": "get_flagged_transactions",
+        "parameters": [
+          {
+            "name": "min_score",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "minimum": 0,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 500
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of flagged transactions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FlaggedTransactionResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "operationId": "health_check",
+        "responses": {
+          "200": {
+            "description": "Health status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "LocationInput": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          }
+        },
+        "required": ["lat", "lng"]
+      },
+      "TransactionRequest": {
+        "type": "object",
+        "properties": {
+          "transaction_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "user_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          },
+          "amount": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "currency": {
+            "type": "string",
+            "default": "INR"
+          },
+          "merchant_id": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "location": {
+            "$ref": "#/components/schemas/LocationInput"
+          },
+          "device_id": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object"
+          }
+        },
+        "required": ["transaction_id", "user_id", "amount", "merchant_id", "timestamp"]
+      },
+      "TransactionResponse": {
+        "type": "object",
+        "properties": {
+          "transaction_id": {
+            "type": "string"
+          },
+          "risk_score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "risk_reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "flagged": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RiskDetailResponse": {
+        "type": "object",
+        "properties": {
+          "transaction_id": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "risk_score": {
+            "type": "integer"
+          },
+          "risk_reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "raw_evidence": {
+            "type": "object"
+          },
+          "evaluated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "flagged": {
+            "type": "boolean"
+          }
+        }
+      },
+      "FlaggedTransactionResponse": {
+        "type": "object",
+        "properties": {
+          "transaction_id": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "merchant_id": {
+            "type": "string"
+          },
+          "risk_score": {
+            "type": "integer"
+          },
+          "risk_reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "evaluated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "database": {
+            "type": "object"
+          },
+          "redis": {
+            "type": "object"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "string"
+          },
+          "error_code": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
