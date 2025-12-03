@@ -1,175 +1,107 @@
-📌 Overview
+# Transaction Risk & Fraud Detection Engine
 
-The Transaction Risk & Fraud Detection Engine is a production-style backend system that evaluates financial transactions and assigns a fraud-risk score using multiple rule-based and probabilistic signals — similar to real-world systems used by fintech companies like CRED, Stripe, PayPal, Razorpay, and others.
+## 📌 Overview
+The Transaction Risk & Fraud Detection Engine is a production-style backend system that evaluates financial transactions and assigns a fraud-risk score using rule-based and probabilistic signals.
 
-This backend identifies suspicious activity based on:
+Designed with FastAPI, PostgreSQL, Redis, SQLAlchemy, and Docker, the system features clean architecture, modular scoring, real-time evaluation, and scalable infrastructure.
 
-Unusual spending behavior
+## 🚀 Features
+- **Real-time Fraud Scoring:** Assigns a score (0–100) with reasons and evidence.
+- **Fraud Signal Detection:**
+  - Amount spike detection
+  - Velocity spike detection (1 min & 10 min windows)
+  - Location mismatch (Haversine formula)
+  - Device change monitoring
+  - Merchant blacklist
+  - Duplicate transaction patterns
+- **Scalable Architecture:** Uses PostgreSQL, Redis, Docker, and modular code.
+- **Production-Grade API:** FastAPI docs, idempotent submission, strong validation.
+- **Testing:** PyTest suite, unit + integration, scoring validation.
 
-Rapid repeated transactions
+## 🧠 How the Risk Engine Works
+For every transaction, modular rules evaluate risk:
 
-Geo-location anomalies
+| Signal                | Description                          | Score |
+|-----------------------|--------------------------------------|-------|
+| Amount Spike          | Amount > 5× user’s average           | +30   |
+| Velocity Spike        | ≥3 transactions in last 60s          | +25   |
+| Velocity Unusual      | ≥5 transactions in 10 min            | +15   |
+| Location Mismatch     | >500 km jump within 12 hours         | +20   |
+| Device Change         | New/suspicious device ID              | +10   |
+| Merchant Blacklist    | High-risk merchants                    | +40   |
+| Duplicate Transaction | Same amount + merchant in 30s         | +35   |
 
-Device changes
+Final scores are clamped 0–100. Stored data: risk score, reasons, raw evidence, timestamps.
 
-Duplicate patterns
-
-Merchant risk levels
-
-Designed using FastAPI, PostgreSQL, Redis, SQLAlchemy, and Docker, this system demonstrates clean architecture, modular scoring, real-time evaluation, and scalable infrastructure.
-
-🚀 Features
-✔️ Real-time Fraud Scoring
-
-Assigns a score (0–100) with detailed reasons and evidence.
-
-✔️ Multiple Fraud Signals
-
-Amount spike detection
-
-Velocity spike detection (1 min & 10 min windows)
-
-Location mismatch via Haversine formula
-
-Device change monitoring
-
-Merchant blacklist
-
-Duplicate transaction patterns
-
-✔️ Scalable Architecture
-
-PostgreSQL for durable storage
-
-Redis for caching & sliding windows
-
-Clean modular code
-
-Containerized with Docker
-
-✔️ Production-Grade API
-
-FastAPI with auto OpenAPI docs
-
-Idempotent transaction submission
-
-Strong request validation
-
-✔️ Testing
-
-PyTest test suite
-
-Unit + integration tests
-
-Scoring engine validation
-
-🧠 How the Risk Engine Works
-
-For each incoming transaction, the engine applies modular rules:
-
-Signal	Description	Score
-Amount Spike	Amount > 5× user’s average	+30
-Velocity Spike	≥3 transactions in last 60s	+25
-Velocity Unusual	≥5 transactions in 10 minutes	+15
-Location Mismatch	>500 km jump within 12 hours	+20
-Device Change	New or suspicious device ID	+10
-Merchant Blacklist	High-risk merchants	+40
-Duplicate Transaction	Same amount + merchant in 30s	+35
-
-Final score is clamped between 0–100.
-
-The engine stores:
-
-risk score
-
-reasons
-
-raw evidence
-
-timestamps
-
-This simulates how real fintech risk engines work.
-
-🏗️ System Architecture
+## 🏗️ System Architecture
+```mermaid
 flowchart TD
+  A[Client / App] --> B[FastAPI Backend]
+  B --> C1[Risk Scoring Engine]
+  B --> C2[PostgreSQL]
+  B --> C3[Redis Cache]
+  C1 --> C2
+  C1 --> C3
+  C1 --> D[Risk Score + Reasons Returned]
+```
 
-A[Client / App] --> B[FastAPI Backend]
+## 🛠️ Tech Stack
+| Layer          | Technology                   |
+|----------------|-----------------------------|
+| Backend        | FastAPI (Python)            |
+| Database       | PostgreSQL + SQLAlchemy ORM |
+| Cache          | Redis                       |
+| Containers     | Docker + docker-compose     |
+| Testing        | PyTest                      |
+| Docs           | FastAPI OpenAPI UI          |
 
-B --> C1[Risk Scoring Engine]
-B --> C2[PostgreSQL]
-B --> C3[Redis Cache]
-
-C1 --> C2
-C1 --> C3
-
-C1 --> D[Risk Score + Reasons Returned]
-
-🛠️ Tech Stack
-Layer	Technology
-Backend	FastAPI (Python)
-Database	PostgreSQL + SQLAlchemy ORM
-Cache	Redis
-Containerization	Docker + docker-compose
-Testing	PyTest
-Documentation	FastAPI OpenAPI UI
-📦 Project Structure
+## 📦 Project Structure
+```
 transaction-risk-engine/
-│
 ├── app/
 │   ├── main.py
-│   ├── api/
-│   │   └── routes.py
-│   ├── scoring/
-│   │   └── engine.py
-│   ├── db/
-│   │   ├── models.py
-│   │   └── session.py
-│   ├── cache/
-│   │   └── redis_client.py
-│   └── tests/
-│       ├── test_scoring.py
-│       └── test_api.py
-│
+│   ├── api/routes.py
+│   ├── scoring/engine.py
+│   ├── db/models.py, session.py
+│   ├── cache/redis_client.py
+│   └── tests/test_scoring.py, test_api.py
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
 ├── README.md
 └── .gitignore
+```
 
-🐳 Run with Docker (Recommended)
+## 🐳 Getting Started
+
+### Run with Docker (Recommended)
+```bash
 docker-compose up --build
+```
+- API: [http://localhost:8000](http://localhost:8000)
+- Swagger docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-
-API available at:
-👉 http://localhost:8000
-
-Swagger docs:
-👉 http://localhost:8000/docs
-
-▶️ Run Locally (Without Docker)
+### Run Locally (No Docker)
+```bash
 pip install -r requirements.txt
 uvicorn app.main:app --reload
+```
 
-🧪 Testing
-
-Run the entire test suite:
-
+## 🧪 Testing
+Run all tests:
+```bash
 pytest
+```
+Coverage:
+- scoring rule tests
+- API endpoint tests
+- edge-case simulations
 
+## 🔌 API Endpoints
 
-Includes:
-
-scoring rule tests
-
-API endpoint tests
-
-edge-case simulations
-
-🔌 API Endpoints
-POST /transactions
-
-Submit a transaction for scoring.
-
+### Submit Transaction
+`POST /transactions`
+```json
 {
   "transaction_id": "tx1",
   "user_id": "user_123",
@@ -180,15 +112,20 @@ Submit a transaction for scoring.
   "location": {"lat": 19.07, "lng": 72.87},
   "device_id": "dev_x"
 }
+```
 
-GET /risk/{transaction_id}
+### Fetch Risk Score
+`GET /risk/{transaction_id}` – fetch risk score + reasons.
 
-Fetch risk score + reasons.
+### List High-risk Transactions
+`GET /flags?min_score=70` – all flagged transactions.
 
-GET /flags?min_score=70
+### Health Check
+`GET /health` – DB + Redis status.
 
-Get all flagged high-risk transactions.
+---
 
-GET /health
+## 🙋 Authors 
+- **Author:** [Sa1385](https://github.com/Sa1385)
 
-Health check for DB + Redis.
+---
