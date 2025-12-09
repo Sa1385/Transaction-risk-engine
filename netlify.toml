@@ -1,0 +1,23 @@
+[build]
+  command = "pip install -r requirements.txt"
+  publish = "."
+  functions = "functions"
+
+[build.environment]
+  PYTHON_VERSION = "3.9"
+  NODE_VERSION = "16"
+
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["@netlify/plugin-functions-core"]
+
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/main"
+  status = 200
+  force = true
+
+[[plugins]]
+  package = "@netlify/plugin-functions"
+  [plugins.inputs]
+    functions = "functions"
